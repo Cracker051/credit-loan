@@ -10,7 +10,7 @@ class BaseTextChoices:
 class RoleChoices(BaseTextChoices):
     USER = "user"
     OPERATOR = "operator"
-    CREDITOR = "creditor"
+    ADMIN = "admin"
 
 
 class TokenType(BaseTextChoices):

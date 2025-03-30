@@ -12,6 +12,9 @@ class JWTAuthMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        if request.user.is_authenticated:
+            return self.get_response(request)
+
         token = request.headers.get("Authorization")
 
         if token is None or not token.startswith(settings.DEFAULT_AUTH_PREFIX):

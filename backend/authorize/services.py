@@ -102,7 +102,7 @@ class DecodeTokenService(BaseService):
         user_info = (
             User.objects.filter(pk=payload["user_id"])
             .select_related("role")
-            .values("id", "first_name", "last_name", "email", "is_verified", "is_staff", "is_superuser", "role__name")
+            .values("id", "first_name", "last_name", "email", "is_verified", "role__name")
             .first()
         )
 
