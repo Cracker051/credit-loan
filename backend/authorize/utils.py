@@ -3,9 +3,9 @@ from typing import Any
 
 import jwt
 from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser
 
 from backend.authorize.const import TokenType
-from backend.authorize.models import User
 
 
 def generate_token(
@@ -20,7 +20,7 @@ def generate_token(
     return jwt.encode(body, pass_key, algorithm)
 
 
-def get_jwt_credentials(user: User) -> dict:
+def get_jwt_credentials(user: AbstractBaseUser) -> dict:
     payload_body = {"user_id": user.pk}
     access_token = generate_token({"type": TokenType.ACCESS, **payload_body}, lifetime=settings.ACCESS_TOKEN_LIFETIME)
 

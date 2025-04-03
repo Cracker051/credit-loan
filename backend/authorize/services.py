@@ -113,3 +113,19 @@ class DecodeTokenService(BaseService):
     def response(self) -> Response:
         handler = self.decode_token()
         return Response(handler, status=200)
+
+
+class SendVerificationService(BaseService):
+    def send_verification(self) -> dict:
+        if self.user.is_verified:
+            result = {"result": "Email is already verified"}
+        else:
+            User.objects.send_verification_mail(self.user)
+            result = {"result": True}
+        return result
+
+    @override
+    @property
+    def response(self) -> Response:
+        handler = self.send_verification()
+        return Response(handler, status=200)

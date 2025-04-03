@@ -4,12 +4,16 @@ from rest_framework import serializers
 from backend.authorize.models import Role, User
 
 
-class LoginSerializer(serializers.Serializer):
+class BaseSerializer(serializers.Serializer):
+    pass
+
+
+class LoginSerializer(BaseSerializer):
     username = serializers.CharField()
     password = serializers.CharField(trim_whitespace=False)
 
 
-class RegisterSerializer(serializers.Serializer):
+class RegisterSerializer(BaseSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     email = serializers.EmailField()
@@ -23,7 +27,7 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
 
-class TokenSerializer(serializers.Serializer):
+class TokenSerializer(BaseSerializer):
     token = serializers.CharField()
 
     @staticmethod

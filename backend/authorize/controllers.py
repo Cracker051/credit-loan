@@ -1,5 +1,12 @@
-from backend.authorize.serializers import LoginSerializer, RegisterSerializer, TokenSerializer
-from backend.authorize.services import DecodeTokenService, LoginService, RegisterUserService, RenewAccessTokenService
+from backend.authorize.permissions import IsAuthenticated
+from backend.authorize.serializers import BaseSerializer, LoginSerializer, RegisterSerializer, TokenSerializer
+from backend.authorize.services import (
+    DecodeTokenService,
+    LoginService,
+    RegisterUserService,
+    RenewAccessTokenService,
+    SendVerificationService,
+)
 from backend.base.controllers import BaseAPIController
 
 
@@ -21,3 +28,9 @@ class RenewTokenController(BaseAPIController):
 class DecodeTokenController(BaseAPIController):
     serializer_classes = {"post": TokenSerializer}
     service_classes = {"post": DecodeTokenService}
+
+
+class SendVerificationController(BaseAPIController):
+    permission_classes = {"get": [IsAuthenticated]}
+    serializer_classes = {"default": BaseSerializer}
+    service_classes = {"get": SendVerificationService}

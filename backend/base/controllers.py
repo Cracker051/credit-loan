@@ -23,7 +23,7 @@ class BaseAPIController(APIView):
 
     @override
     def get_permissions(self) -> List[BasePermission]:
-        endpoint_permissions = self.permission_classes.get(self.request.method.upper(), [])
+        endpoint_permissions = self.permission_classes.get(self.request.method.lower(), [])
         mixed_permissions = set(endpoint_permissions + super().permission_classes)  # to prevent duplicates
         return [permission() for permission in mixed_permissions]
 
@@ -39,8 +39,8 @@ class BaseAPIController(APIView):
         self.request = request
         self.headers = self.default_response_headers
 
-        self.initial(request, *args, **kwargs)
         try:
+            self.initial(request, *args, **kwargs)
             if request.method.lower() not in self.service_classes.keys():
                 raise self.http_method_not_allowed(request)
 
@@ -49,7 +49,7 @@ class BaseAPIController(APIView):
             serializer = self.get_serializer(request)
 
             serializer.is_valid(raise_exception=True)
-            service = service_cls(**serializer.validated_data)
+            service = service_cls(user=request.user, **serializer.validated_data)
             response = service.response
         except Exception as exc:
             response = self.handle_exception(exc)

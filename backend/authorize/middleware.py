@@ -21,10 +21,11 @@ class JWTAuthMiddleware:
             request.user = AnonymousUser()
             return self.get_response(request)
 
-        token = token.split(settings.DEFAULT_AUTH_PREFIX, maxsplit=1)[-1]
+        token = token.split(settings.DEFAULT_AUTH_PREFIX, maxsplit=1)[-1].strip()
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.AUTH_ALGORITHMS)
-        except (jwt.DecodeError, jwt.InvalidSignatureError, jwt.ExpiredSignatureError):
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.AUTH_HASH_ALGORITHM])
+        except (jwt.DecodeError, jwt.InvalidSignatureError, jwt.ExpiredSignatureError) as e:
+            breakpoint()
             request.user = AnonymousUser()
             return self.get_response(request)
 
