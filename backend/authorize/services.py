@@ -3,9 +3,9 @@ from typing import override
 import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
-from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from backend.authorize import exceptions
 from backend.authorize.const import JWT_ERRORS, TokenType
 from backend.authorize.models import Role, User
 from backend.authorize.utils import generate_token, get_jwt_credentials
@@ -21,7 +21,7 @@ class LoginService(BaseService):
     def authenticate_user(self) -> dict:
         user = authenticate(username=self.username, password=self.password)
         if user is None:
-            raise ValidationError("WRONG_CREDENTIALS")
+            raise exceptions.ValidationError("WRONG_CREDENTIALS")
 
         return get_jwt_credentials(user)
 
@@ -67,10 +67,10 @@ class RenewAccessTokenService(BaseService):
         try:
             payload = jwt.decode(self.token, settings.SECRET_KEY, algorithms=[settings.AUTH_HASH_ALGORITHM])
         except JWT_ERRORS as e:
-            raise ValidationError(str(e))
+            raise exceptions.ValidationError(str(e))
 
         if payload.get("type") != TokenType.REFRESH:
-            raise ValidationError("ONLY_REFRESH_TOKEN_SUPPORTED")
+            raise exceptions.ValidationError("ONLY_REFRESH_TOKEN_SUPPORTED")
 
         access_token = generate_token(
             {"type": TokenType.ACCESS, "user_id": payload["user_id"]}, lifetime=settings.ACCESS_TOKEN_LIFETIME
@@ -94,10 +94,10 @@ class DecodeTokenService(BaseService):
         try:
             payload = jwt.decode(self.token, settings.SECRET_KEY, algorithms=[settings.AUTH_HASH_ALGORITHM])
         except JWT_ERRORS as e:
-            raise ValidationError(str(e))
+            raise exceptions.ValidationError(str(e))
 
         if payload.get("type") != TokenType.ACCESS:
-            raise ValidationError("ONLY_ACCESS_TOKEN_SUPPORTED")
+            raise exceptions.ValidationError("ONLY_ACCESS_TOKEN_SUPPORTED")
 
         user_info = (
             User.objects.filter(pk=payload["user_id"])
@@ -118,14 +118,42 @@ class DecodeTokenService(BaseService):
 class SendVerificationService(BaseService):
     def send_verification(self) -> dict:
         if self.user.is_verified:
-            result = {"result": "Email is already verified"}
-        else:
-            User.objects.send_verification_mail(self.user)
-            result = {"result": True}
-        return result
+            raise exceptions.UserAlreadyVerifiedException()
+        User.objects.send_verification_mail(self.user)
+        return {"sent": True}
 
     @override
     @property
     def response(self) -> Response:
         handler = self.send_verification()
+        return Response(handler, status=200)
+
+
+class VerifyUserEmailService(BaseService):
+    def __init__(self, token: str, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.token = token
+
+    def verify_email(self) -> dict:
+        if self.user.is_verified:
+            raise exceptions.UserAlreadyVerifiedException()
+
+        try:
+            payload = jwt.decode(self.token, settings.SECRET_KEY, algorithms=[settings.AUTH_HASH_ALGORITHM])
+        except JWT_ERRORS as e:
+            raise exceptions.ValidationError(str(e))
+
+        user_pk = payload.get("user_id")
+        token_user_email = User.objects.filter(pk=user_pk).values_list("email", flat=True).first()
+        if self.user.email != token_user_email:
+            raise exceptions.EmailDoesNotMatchException()
+        self.user.is_verified = True
+        self.user.save(update_fields=["is_verified"])
+
+        return {"verified": True}
+
+    @override
+    @property
+    def response(self) -> Response:
+        handler = self.verify_email()
         return Response(handler, status=200)

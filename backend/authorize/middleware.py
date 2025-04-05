@@ -25,7 +25,6 @@ class JWTAuthMiddleware:
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.AUTH_HASH_ALGORITHM])
         except (jwt.DecodeError, jwt.InvalidSignatureError, jwt.ExpiredSignatureError) as e:
-            breakpoint()
             request.user = AnonymousUser()
             return self.get_response(request)
 
