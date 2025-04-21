@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from backend.authorize.const import RoleChoices
 from backend.authorize.models import Role, User
+from backend.base.const import RoleChoices
 
 
 class Command(BaseCommand):

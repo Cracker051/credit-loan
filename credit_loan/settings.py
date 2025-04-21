@@ -18,10 +18,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_yasg",
     "django_extensions",
     "credit_loan.apps.CustomAdminConfig",
     "rest_framework",
     "backend.authorize",
+    "backend.credit",
 ]
 
 MIDDLEWARE = [
