@@ -26,10 +26,13 @@ With activated environment:
 python3 manage.py runserver
 ```
 
-## Troubleshootuing
+## Troubleshooting
 - `python3 manage.py runserver` failed with error `You don't have permission to access that port` on Windows 10
 In my case, the problem was related to the fact that I was using VPN, Hyper-V, and VirtualBox. Run this command in powershell to check if any VPN adapters are in the Up state:
 ```
 Get-NetAdapter | Select-Object Name, InterfaceDescription, Status
 ```
 If you see any of these, you need to disable them. You may need to restart your computer
+
+# Docs
+Swagger is used in the project. REST API docs can be viewed at the `/swagger/` endpoint
