@@ -1,11 +1,12 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from credit_loan.utils import get_secret_key
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = get_secret_key()
 
 DEBUG = True
 
