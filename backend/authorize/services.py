@@ -6,9 +6,9 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 
 from backend.authorize import exceptions
-from backend.authorize.const import JWT_ERRORS, TokenType
 from backend.authorize.models import Role, User
 from backend.authorize.utils import generate_token, get_jwt_credentials
+from backend.base.const import JWT_ERRORS, TokenType
 from backend.base.services import BaseService
 
 

@@ -5,7 +5,7 @@ import jwt
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 
-from backend.authorize.const import TokenType
+from backend.base.const import TokenType
 
 
 def generate_token(

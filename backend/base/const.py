@@ -18,6 +18,11 @@ class TokenType(BaseTextChoices):
     ACCESS = "access"
 
 
+class CreditPlanType(BaseTextChoices):
+    CONSUMER = "consumer"
+    PURPOSE = "purpose"
+
+
 JWT_ERRORS = (
     jwt.ExpiredSignatureError,
     jwt.InvalidTokenError,

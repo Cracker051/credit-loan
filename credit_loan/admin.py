@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.http import HttpRequest
 
-from backend.authorize.const import RoleChoices
+from backend.base.const import RoleChoices
 
 
 class CustomAdminPage(admin.AdminSite):

@@ -6,8 +6,8 @@ from django.core.mail import send_mail
 from django.db import models
 from django.template.loader import render_to_string
 
-from backend.authorize.const import RoleChoices
 from backend.authorize.utils import generate_token
+from backend.base.const import RoleChoices
 
 
 class Role(models.Model):
