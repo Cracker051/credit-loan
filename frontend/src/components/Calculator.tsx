@@ -306,7 +306,7 @@ const Calculator: React.FC = () => {
         </>
       )}
 
-{activeTab === 1 && (
+      {activeTab === 1 && (
         <>
           <Typography variant="h6">Калькулятор споживчого кредиту</Typography>
           <TextField
