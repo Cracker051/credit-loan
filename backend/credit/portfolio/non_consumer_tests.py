@@ -1,7 +1,7 @@
 from credit_requests import NonConsumerCreditRequest
 from data_types import Rate, TimePeriodType, TimePeriod, Payment
 from datetime import datetime
-from loan_portfolio import find_optimal_loan_portfolio
+from backend.credit.portfolio.solver import find_optimal_portfolio
 from typing import Iterable
 
 
@@ -82,7 +82,7 @@ def test_solver(credit_requests: Iterable[NonConsumerCreditRequest]):
   available_resources = 1000
   print("Кредитні ресурси:", available_resources)
   print("Обчислення оптимального портфелю кредитів...")
-  model, selected_requests = find_optimal_loan_portfolio(credit_requests, available_resources)
+  model, selected_requests = find_optimal_portfolio(credit_requests, available_resources)
   print("Оптимальний портфель кредитів:")
   for idx in range(len(selected_requests)):
     is_selected = selected_requests[idx]

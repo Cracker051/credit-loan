@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from data_types import TimePeriod, Payment, Rate
-from utils import calc_duration, to_plural_str
+from .data_types import TimePeriod, Payment, Rate
+from .utils import calc_duration, to_plural_str
 
 
 class BaseCreditRequest(ABC):

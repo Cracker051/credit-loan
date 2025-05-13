@@ -1,9 +1,11 @@
-from credit_requests import BaseCreditRequest, ArtificialCreditRequest
+from .credit_requests import BaseCreditRequest, ArtificialCreditRequest
 from typing import Iterable
 from pulp import LpMaximize, LpProblem, LpVariable, lpSum, PULP_CBC_CMD
+from functools import singledispatchmethod
 
 
-def find_optimal_loan_portfolio(credit_requests: Iterable[BaseCreditRequest], available_resources: float, pulp_logs: bool = False) -> tuple[bool]:
+@singledispatchmethod
+def find_optimal_portfolio(credit_requests: Iterable[BaseCreditRequest], available_resources: float, pulp_logs: bool = False) -> tuple[LpProblem, tuple[bool]]:
   model = LpProblem("Binary_Optimization", LpMaximize)
   n = len(credit_requests)
   x = [LpVariable(f"x{i}", cat="Binary") for i in range(n)]
@@ -24,7 +26,7 @@ def run_test(
     print(f"      Чистий зведений дохід: {credit_request.compute_income()}")
 
   print("  Кредитні ресурси:", available_resources)
-  model, selected_requests = find_optimal_loan_portfolio(credit_requests, available_resources)
+  model, selected_requests = find_optimal_portfolio(credit_requests, available_resources)
   print("  Розрахований портфель кредитів:", selected_requests)
   print("  Очікуваний портфель кредитів:", expected_result)
   print("  Оптимальне значення функції:", round(model.objective.value(), 4))
