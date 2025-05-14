@@ -10,9 +10,9 @@ from backend.base.const import CreditPlanType, TimePeriodType, TransactionType, 
 class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     type = models.CharField(max_length=7, choices=TransactionType.choices)
+    description = models.TextField(blank=True)
     balance = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    description = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):
         if not self.pk:

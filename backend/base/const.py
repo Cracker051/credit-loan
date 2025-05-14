@@ -18,31 +18,31 @@ class RoleChoices(BaseTextChoices):
 
 
 class TokenType(BaseTextChoices):
-    REFRESH = "refresh"
-    ACCESS = "access"
+    REFRESH = "Refresh"
+    ACCESS = "Access"
 
 
 class CreditPlanType(BaseTextChoices):
-    CONSUMER = "consumer"
-    PURPOSE = "purpose"
+    CONSUMER = "Consumer"
+    PURPOSE = "Purpose"
 
 
 class TimePeriodType(BaseTextChoices):
-    DAY = "day"
-    MONTH = "month"
-    QUARTER = "quarter"
-    YEAR = "year"
+    DAY = "Day"
+    MONTH = "Month"
+    QUARTER = "Quarter"
+    YEAR = "Year"
 
 
 class TransactionType(BaseTextChoices):
-    INCOME = 'income'
-    OUTCOME = 'outcome'
+    INCOME = 'Income'
+    OUTCOME = 'Outcome'
 
 
 class CreditRequestStatusType(BaseTextChoices):
-    PENDING = "pending"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
+    PENDING = "Pending"
+    ACCEPTED = "Accepted"
+    REJECTED = "Rejected"
 
 
 JWT_ERRORS = (

@@ -5,7 +5,9 @@ from backend.credit.views import (
   CreditPlanRetrieveUpdateDestroyView,
   CreditRequestListCreateView,
   CreditRequestRetrieveUpdateDestroyView,
-  confirm_portfolio
+  CreditRequestPortfolioView,
+  CreditRequestPortfolioAcceptView,
+  CreditRequestPortfolioRejectView
 )
 
 
@@ -14,5 +16,7 @@ urlpatterns = [
   path("plans/<int:pk>/", CreditPlanRetrieveUpdateDestroyView.as_view(), name='credit-plan-detail'),
   path("requests/", CreditRequestListCreateView.as_view(), name='credit-request-list-create'),
   path("requests/<int:pk>/", CreditRequestRetrieveUpdateDestroyView.as_view(), name='credit-request-detail'),
-  path("confirm_portfolio/", confirm_portfolio)
+  path("requests/portfolio/", CreditRequestPortfolioView.as_view(), name='credit-requests-portfolio'),
+  path("requests/portfolio/accept", CreditRequestPortfolioAcceptView.as_view(), name='credit-requests-portfolio-accept'),
+  path("requests/portfolio/reject", CreditRequestPortfolioRejectView.as_view(), name='credit-requests-portfolio-reject'),
 ]

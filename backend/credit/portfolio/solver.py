@@ -1,10 +1,7 @@
 from .credit_requests import BaseCreditRequest, ArtificialCreditRequest
 from typing import Iterable
 from pulp import LpMaximize, LpProblem, LpVariable, lpSum, PULP_CBC_CMD
-from functools import singledispatchmethod
 
-
-@singledispatchmethod
 def find_optimal_portfolio(credit_requests: Iterable[BaseCreditRequest], available_resources: float, pulp_logs: bool = False) -> tuple[LpProblem, tuple[bool]]:
   model = LpProblem("Binary_Optimization", LpMaximize)
   n = len(credit_requests)
