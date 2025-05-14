@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Signup";
 import CalculatorPage from "./pages/Calculator";
+import CreditRequests from "./pages/Requests";
 
 const App: React.FC = () => {
     return (
@@ -21,6 +22,7 @@ const App: React.FC = () => {
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
                             <Route path="/calculator" element={<CalculatorPage />} />
+                            <Route path="/requests" element={<CreditRequests />} />
                         </Routes>
                     </Box>
                     <Footer />
