@@ -1,8 +1,10 @@
 from typing import Optional, override
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.mail import send_mail
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.template.loader import render_to_string
 
@@ -85,6 +87,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     is_verified = models.BooleanField(default=False)
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="users")
+
+    insolvency_probability = models.DecimalField(
+        validators=[MinValueValidator(0.0001), MaxValueValidator(0.9999)],
+        max_digits=5,
+        decimal_places=4,
+        default=Decimal('0.00')
+    )
 
     USERNAME_FIELD = "email"
 

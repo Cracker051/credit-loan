@@ -5,6 +5,10 @@ class BaseTextChoices:
     @classmethod
     def choices(cls) -> dict:
         return {k.capitalize(): v for k, v in cls.__dict__.items() if not k.startswith(("__", "_"))}
+    
+    @classmethod
+    def is_valid(_class, choice: str) -> bool:
+        return (choice in BaseTextChoices.choices().values())
 
 
 class RoleChoices(BaseTextChoices):
@@ -14,13 +18,31 @@ class RoleChoices(BaseTextChoices):
 
 
 class TokenType(BaseTextChoices):
-    REFRESH = "refresh"
-    ACCESS = "access"
+    REFRESH = "Refresh"
+    ACCESS = "Access"
 
 
 class CreditPlanType(BaseTextChoices):
-    CONSUMER = "consumer"
-    PURPOSE = "purpose"
+    CONSUMER = "Consumer"
+    PURPOSE = "Purpose"
+
+
+class TimePeriodType(BaseTextChoices):
+    DAY = "Day"
+    MONTH = "Month"
+    QUARTER = "Quarter"
+    YEAR = "Year"
+
+
+class TransactionType(BaseTextChoices):
+    INCOME = 'Income'
+    OUTCOME = 'Outcome'
+
+
+class CreditRequestStatusType(BaseTextChoices):
+    PENDING = "Pending"
+    ACCEPTED = "Accepted"
+    REJECTED = "Rejected"
 
 
 JWT_ERRORS = (
