@@ -118,7 +118,7 @@ const Calculator: React.FC = () => {
     setRateValue("44.02");
     setDuration("5");
     setStartDate(today.toISOString().substring(0, 10));
-    setTimeout(() => generateAnnuityPayments(), 100);
+    // setTimeout(() => generateAnnuityPayments(), 100);
   };
 
   const handleAddPayment = () => {
@@ -134,10 +134,14 @@ const Calculator: React.FC = () => {
     setPayments(newPayments);
   };
 
+  // const handleRemovePayment = (index: number) => {
+  //   setPayments(payments.filter((_, i) => i !== index));
+  // };
   const handleRemovePayment = (index: number) => {
-    setPayments(payments.filter((_, i) => i !== index));
+    const updated = [...payments];
+    updated[index] = { ...updated[index], amount: "0" };
+    setPayments(updated);
   };
-
   const convertAnnualTo = (annualRate: number, target: TimePeriodType): number => {
     switch (target) {
       case TimePeriodType.DAY:
@@ -270,14 +274,17 @@ const Calculator: React.FC = () => {
                   InputLabelProps={{ shrink: true }}
                   value={payment.date}
                   onChange={e => handlePaymentChange(index, "date", e.target.value)}
+                  InputProps={{ readOnly: true }}
                 />
                 <IconButton onClick={() => handleRemovePayment(index)}>
                   <DeleteIcon />
                 </IconButton>
               </Stack>
             ))}
-            <Button onClick={handleAddPayment}>Додати платіж</Button>
-
+            {/* <Button onClick={handleAddPayment}>Додати платіж</Button> */}
+            <Button variant="outlined" sx={{ mb: 2 }} onClick={generateAnnuityPayments}>
+            Згенерувати графік платежів
+            </Button>
             {lastPayment && (
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
                 <TextField
