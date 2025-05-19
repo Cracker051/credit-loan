@@ -17,6 +17,8 @@ import {
     useTheme,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import {API_DOMAIN} from "../utils/constants";
+import {useNavigate} from "react-router-dom";
 
 interface Payment {
     date: string;
@@ -32,40 +34,134 @@ interface CreditRequest {
     recommended: boolean;
 }
 
-const mockRequests: CreditRequest[] = [
-    {
-        id: "1",
-        userName: "Марянчук Олександр",
-        creditName: "Автокредит",
-        amount: 15000,
-        schedule: [
-            { date: "2025-06-01", amount: 500 },
-            { date: "2025-07-01", amount: 500 },
-        ],
-        recommended: true,
-    },
-    {
-        id: "2",
-        userName: "Олена Коваль",
-        creditName: "Іпотека",
-        amount: 80000,
-        schedule: [
-            { date: "2025-06-01", amount: 1000 },
-            { date: "2025-07-01", amount: 1000 },
-        ],
-        recommended: false,
-    },
-];
-
 const CreditRequests: React.FC = () => {
     const [requests, setRequests] = useState<CreditRequest[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedSchedule, setSelectedSchedule] = useState<Payment[] | null>(null);
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+    const navigate = useNavigate();
+
+    const token = localStorage.getItem("accessToken");
+
+    const mapToMockRequest = (creditRequest: any) => ({
+        id: creditRequest.plan?.toString() || "0",
+        userName: creditRequest.user_email,
+        creditName: creditRequest.plan_name,
+        amount: creditRequest.amount,
+        schedule: (creditRequest.return_schedule || []).map((item: any) => ({
+            date: item.date,
+            amount: item.amount,
+        })),
+    });
+
+    const getRequests = async () => {
+        const token = localStorage.getItem("accessToken");
+
+        if (!token) {
+            console.error("Access token not found.");
+            navigate("/");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_DOMAIN}/credit/requests/portfolio/`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}`);
+            }
+
+            const items = await response.json();
+
+            console.log(items)
+
+            const detailPromises = items.map(async (item: any) => {
+                const res = await fetch(`${API_DOMAIN}/credit/requests/${item['credit_request_id']}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Error fetching ID ${item['credit_request_id']}: ${res.status}`);
+                }
+
+                const creditRequest = await res.json();
+                const data = mapToMockRequest(creditRequest);
+                return {...data, recommended: item['is_selected'] >= 0.5};
+            });
+
+            const details = await Promise.all(detailPromises);
+
+            setRequests(details);
+            console.log("Fetched collections:", details);
+        } catch (error) {
+            console.error("Request failed:", error);
+        }
+    };
+
+    const handleAccept = async () => {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+            console.error("Access token not found.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_DOMAIN}/credit/requests/portfolio/accept`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}`);
+            }
+
+            navigate("/", { replace: true });
+        } catch (error) {
+            console.error("Request failed:", error);
+        }
+    };
+
+    const handleReject = async () => {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+            console.error("Access token not found.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_DOMAIN}/credit/requests/portfolio/reject`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}`);
+            }
+
+            navigate("/", { replace: true });
+        } catch (error) {
+            console.error("Request failed:", error);
+        }
+    };
 
     useEffect(() => {
-        setRequests(mockRequests);
+        getRequests();
     }, []);
 
     const handleOpenSchedule = (schedule: Payment[]) => {
@@ -102,7 +198,6 @@ const CreditRequests: React.FC = () => {
                             <TableCell sx={{ fontWeight: 600 }}>Сума</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Графік</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Рекомендовано</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 600 }}>Дії</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -137,27 +232,30 @@ const CreditRequests: React.FC = () => {
                                         {req.recommended ? "Так" : "Ні"}
                                     </Typography>
                                 </TableCell>
-                                <TableCell align="center">
-                                    <Button
-                                        variant="outlined"
-                                        color="success"
-                                        sx={{ mr: 1, textTransform: "none" }}
-                                    >
-                                        Прийняти
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        color="error"
-                                        sx={{ textTransform: "none" }}
-                                    >
-                                        Відхилити
-                                    </Button>
-                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                <Button
+                    variant="contained"
+                    color="success"
+                    sx={{ textTransform: "none" }}
+                    onClick={handleAccept}
+                >
+                    Прийняти
+                </Button>
+                <Button
+                    variant="contained"
+                    color="error"
+                    sx={{ textTransform: "none" }}
+                    onClick={handleReject}
+                >
+                    Відхилити
+                </Button>
+            </Box>
 
             <Dialog
                 open={dialogOpen}
