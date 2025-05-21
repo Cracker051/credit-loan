@@ -33,6 +33,8 @@ interface PaymentInput {
 
 const Calculator: React.FC = () => {
   const [ratePackages, setRatePackages] = useState<{ name: string; value: number }[]>([]);
+  const [calculationReady, setCalculationReady] = useState(false);
+
   // Споживчий калькулятор
   const [consumerAmount, setConsumerAmount] = useState<string>("");
   const [consumerRate, setConsumerRate] = useState<string>("");
@@ -55,6 +57,7 @@ const Calculator: React.FC = () => {
       setMonthlyPayment(A);
       setTotalOverpay(overpay);
       setTotalAmount(total);
+      setCalculationReady(true);
     }
   };
  // НЕспоживчий калькулятор
@@ -83,23 +86,26 @@ const Calculator: React.FC = () => {
     }
   }, []);
   useEffect(() => {
-    const fetchRatePackages = async () => {
-      try {
-        const res = await fetch(`${API_DOMAIN}/credit/plans/`);
-        const data = await res.json();
-        const mapped = data.map((item: any) => ({
+    const type = activeTab === 0 ? "Purpose" : "Consumer";
+    fetchRatePackages(type);
+    setCalculationReady(false);
+  }, [activeTab]);
+  const fetchRatePackages = async (targetType: string) => {
+    try {
+      const res = await fetch(`${API_DOMAIN}/credit/plans/`);
+      const data = await res.json();
+      const mapped = data
+        .filter((item: any) => item.type === targetType)
+        .map((item: any) => ({
+          id: item.id,
           name: item.name,
-          value: parseFloat(item.interest_rate)*100,
+          value: parseFloat(item.interest_rate) * 100,
         }));
-        setRatePackages(mapped);
-      } catch (error) {
-        console.error("Failed to fetch credit plans:", error);
-      }
-    };
-  
-    fetchRatePackages();
-  }, []);
-
+      setRatePackages(mapped);
+    } catch (error) {
+      console.error("Failed to fetch credit plans:", error);
+    }
+  };
   useEffect(() => {
     const months = Number(duration);
     if (months > 0) {
@@ -110,10 +116,14 @@ const Calculator: React.FC = () => {
     }
   }, [duration]);
   const handlePackageChange = (pkg: string) => {
-
     setSelectedPackage(pkg);
     const found = ratePackages.find(p => p.name === pkg);
     if (found) setRateValue(found.value.toString());
+  };
+  const handlePackageChangeConsumer = (pkg: string) => {
+    setSelectedPackage(pkg);
+    const found = ratePackages.find(p => p.name === pkg);
+    if (found) setConsumerRate(found.value.toString());
   };
   const generateAnnuityPayments = () => {
     const principal = Number(amount);
@@ -169,8 +179,9 @@ const Calculator: React.FC = () => {
   const handleSubmitRequest = async () => {
     const token = localStorage.getItem("accessToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
-  
-    const payload = {
+    let payload;
+    if (activeTab === 0) {
+    payload = {
       amount: Number(amount),
       repayment_period_unit: timePeriodMap[rateFrequency],
       repayment_period_duration: Number(duration),
@@ -190,6 +201,34 @@ const Calculator: React.FC = () => {
       // plan: selectedPackage, // make with ID (PK)
       plan: 0,
     };
+    } else {
+      const months = Number(consumerMonths);
+      const amountNum = Number(consumerAmount);
+      const monthlyPaymentRounded = Number((monthlyPayment ?? 0).toFixed(2));
+      const start = new Date(consumerStartDate);
+  
+      const consumerSchedule = [];
+      for (let i = 1; i <= months; i++) {
+        const payDate = new Date(start);
+        payDate.setMonth(payDate.getMonth() + i);
+        consumerSchedule.push({
+          amount: monthlyPaymentRounded,
+          date: payDate.toISOString().substring(0, 10),
+        });
+      }
+  
+      payload = {
+        amount: amountNum,
+        repayment_period_unit: "Month",
+        repayment_period_duration: months,
+        repayment_period_start_date: consumerStartDate,
+        status: "Pending",
+        return_schedule: consumerSchedule,
+        user: user?.id,
+        // plan: selectedPackage, // make with ID (PK)
+        plan: 0,
+      };
+    }
   
     try {
       const response = await fetch(`${API_DOMAIN}/credit/requests/`, {
@@ -275,6 +314,7 @@ const Calculator: React.FC = () => {
 
     setLastPayment(last);
     setIncome(inc);
+    setCalculationReady(true);
   };
 
   return (
@@ -384,7 +424,11 @@ const Calculator: React.FC = () => {
           </Box>
 
           <Button variant="contained" color="primary" sx={{ mt: 3 }} onClick={handleCalculate}>Розрахувати</Button>
-          <Button variant="contained" color="success" onClick={handleSubmitRequest} sx={{ mt: 2 }}>Подати заявку</Button>
+          {calculationReady && (
+          <Button variant="contained" color="success" onClick={handleSubmitRequest} sx={{ mt: 2 }}>
+            Подати заявку
+          </Button>
+          )}
 
           {income !== null && isAdmin && (
             <Box sx={{ mt: 1 }}>
@@ -395,8 +439,22 @@ const Calculator: React.FC = () => {
       )}
 
       {activeTab === 1 && (
+        
         <>
           <Typography variant="h6">Калькулятор споживчого кредиту</Typography>
+          <FormControl fullWidth>
+              <InputLabel id="package-label">Пакет</InputLabel>
+              <Select
+                labelId="package-label"
+                value={selectedPackage}
+                label="Пакет"
+                onChange={e => handlePackageChangeConsumer(e.target.value)}
+              >
+                {ratePackages.map(pkg => (
+                  <MenuItem key={pkg.name} value={pkg.name}>{`Пакет ${pkg.name} (${pkg.value}%) `}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           <TextField
             fullWidth
             label="Сума кредиту"
@@ -410,6 +468,7 @@ const Calculator: React.FC = () => {
             margin="normal"
             value={consumerRate}
             onChange={e => setConsumerRate(e.target.value)}
+            InputProps={{ readOnly: !isAdmin }}
           />
           <TextField
             fullWidth
@@ -430,6 +489,11 @@ const Calculator: React.FC = () => {
           <Button variant="contained" sx={{ mt: 2 }} onClick={handleConsumerCalculate}>
             Розрахувати
           </Button>
+          {calculationReady && (
+          <Button variant="contained" color="success" onClick={handleSubmitRequest} sx={{ mt: 2 }}>
+            Подати заявку
+          </Button>
+          )}
           {monthlyPayment !== null && (
             <Box sx={{ mt: 2 }}>
               <Typography>Щомісячний платіж: {monthlyPayment.toFixed(2)} грн</Typography>
