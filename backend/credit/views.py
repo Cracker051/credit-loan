@@ -6,8 +6,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from backend.credit.models import CreditPlan, CreditRequest, CreditRequestStatusType
-from backend.credit.serializers import CreditPlanSerializer, CreditRequestSerializer
+from backend.credit.models import CreditPlan, CreditRequest, CreditRequestStatusType, Transaction
+from backend.credit.serializers import CreditPlanSerializer, CreditRequestSerializer, TransactionSerializer
 from backend.credit import permissions
 from backend.credit.services import CreditRequestPortfolioService
 
@@ -41,7 +41,7 @@ class CreditRequestListCreateView(generics.ListCreateAPIView):
     """
     queryset = CreditRequest.objects.all()
     serializer_class = CreditRequestSerializer
-    permission_classes = [permissions.IsVerifiedUserContent]
+    permission_classes = [permissions.IsUserListContent]
 
     def get_queryset(self):
         queryset = CreditRequest.objects.all()
@@ -125,3 +125,25 @@ class CreditRequestPortfolioRejectView(APIView):
             credit_request.status = CreditRequestStatusType.REJECTED
             id_list.append(credit_request.id)
         return Response({"rejected_credit_request": id_list}, status=status.HTTP_200_OK)
+
+
+class TransactionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    CRUD операції для транзакцій
+    Доступно лише staff-користувачам
+    """
+    queryset = Transaction.objects.all()
+    serializer_class = TransactionSerializer
+    permission_classes = [permissions.IsStaffOnlyContent]
+
+
+class CurrentBalanceView(APIView):
+    """
+    Отримати поточний баланс (розмі кредитних ресурсів)
+    Доступно лише staff-користувачам
+    """
+    permission_classes = [permissions.IsStaffOnlyContent]
+
+    def get(self, request):
+        data = {"balance": Transaction.objects.latest("created_at").balance}
+        return Response(data)

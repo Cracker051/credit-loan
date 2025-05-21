@@ -122,4 +122,25 @@ class NonConsumerCreditRequest(BaseCreditRequest):
     duration = calc_duration(self.repayment_period.start_date, last_payment.date, self.rate.frequency)
     d += last_payment.amount / ((1 + self.rate.value) ** duration)
     return d
+
+
+class ConsumerCreditRequest(BaseCreditRequest):
+  def __init__(self, amount: float, rate: Rate, repayment_period: TimePeriod):
+    super().__init__(amount, rate, repayment_period)
+    
+  def __str__(self):
+    fields = (
+      f"розмір позики: {self.amount}",
+      f"ставка дисконту: {self.rate}",
+      f"період виплати кредиту: {self.repayment_period}",
+    )
+    return f"ConsumerCreditRequest<{', '.join(fields)}>"
   
+  def print(self):
+    return print(self)
+
+  def compute_income(self) -> float:
+    d = -self.amount
+    duration = calc_duration(self.repayment_period.start_date, self.repayment_period.get_end_date(), self.rate.frequency)
+    d += self.amount * ((1 + self.rate.value) ** duration)
+    return d

@@ -7,7 +7,9 @@ from backend.credit.views import (
   CreditRequestRetrieveUpdateDestroyView,
   CreditRequestPortfolioView,
   CreditRequestPortfolioAcceptView,
-  CreditRequestPortfolioRejectView
+  CreditRequestPortfolioRejectView,
+  TransactionRetrieveUpdateDestroyView,
+  CurrentBalanceView
 )
 
 
@@ -19,4 +21,6 @@ urlpatterns = [
   path("requests/portfolio/", CreditRequestPortfolioView.as_view(), name='credit-requests-portfolio'),
   path("requests/portfolio/accept", CreditRequestPortfolioAcceptView.as_view(), name='credit-requests-portfolio-accept'),
   path("requests/portfolio/reject", CreditRequestPortfolioRejectView.as_view(), name='credit-requests-portfolio-reject'),
+  path("transactions/<int:pk>/", TransactionRetrieveUpdateDestroyView.as_view(), name='transactions-crud'),
+  path("transactions/balance", CurrentBalanceView.as_view(), name='transactions-balance'),
 ]

@@ -2,30 +2,27 @@ from django.contrib.auth.decorators import login_required
 from functools import wraps
 from django.http import JsonResponse
 
-from backend.base.const import RoleChoices
+from backend.base.const import RoleChoices, CreditRequestStatusType
 
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
 class IsVerifiedUserContent(BasePermission):
   """
-  Allows create — only verified,
-  read/edit/delete — only author or admin.
+  Read/edit/delete — only author or staff
   """
 
   def has_permission(self, request, view):
-    # Для POST — перевірка на верифікацію
-    if request.method == "POST":
-      return request.user and request.user.is_authenticated and request.user.is_verified
-
-    # Для GET, PUT, PATCH, DELETE — потрібно перевірити об'єкт (has_object_permission)
-    return request.user and request.user.is_authenticated
+    return request.user and request.user.is_authenticated and request.user.is_verified
 
   def has_object_permission(self, request, view, obj):
-    if not request.user:
+    print("request.user == obj.user", request.user == obj.user)
+    if not (request.user == obj.user or request.user.is_staff):
       return False
     
-    return request.user == obj.user or request.user.is_staff
+    return (obj.status == CreditRequestStatusType.PENDING
+            or request.user.is_staff
+            or request.method == "GET")
   
 
 class IsReadOnlyContent(BasePermission):
@@ -55,14 +52,13 @@ class IsStaffOnlyContent(BasePermission):
     return request.user and request.user.is_authenticated and request.user.is_staff
 
 
-def non_public_content(view_func):
-    @login_required
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if (not request.user) or request.user.role == RoleChoices.USER:
-          JsonResponse(
-              {"message": "This content is not publicly available"},
-              status=403
-          )
-        return view_func(request, *args, **kwargs)
-    return wrapper
+class IsUserListContent(BasePermission):
+  """
+  Allows create — only verified users
+  All other operations — staff only 
+  """
+  def has_permission(self, request, view):
+    if request.method == "POST":
+      return request.user and request.user.is_authenticated and request.user.is_verified
+
+    return request.user and request.user.is_authenticated and request.user.is_staff
