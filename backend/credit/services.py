@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from backend.credit.models import CreditPlanType, CreditRequest, CreditRequestStatusType, Transaction
 from backend.credit.portfolio.solver import find_optimal_portfolio
-from backend.credit.portfolio.credit_requests import BaseCreditRequest, NonConsumerCreditRequest
+from backend.credit.portfolio.credit_requests import BaseCreditRequest, NonConsumerCreditRequest, ConsumerCreditRequest
 from backend.credit.portfolio.data_types import Rate, TimePeriod, TimePeriodType, Payment
 
 from datetime import datetime
@@ -36,12 +36,13 @@ class CreditRequestPortfolioService:
     return tuple(self.convert_credit_request(model) for model in models)
 
   def convert_credit_request(self, model: CreditRequest) -> BaseCreditRequest:
+    rate_frequency = self.to_time_period_type(model.plan.rate_frequency)
+    rate = Rate(float(model.plan.interest_rate), rate_frequency)
+    unit = self.to_time_period_type(model.repayment_period_unit)
+    repayment_period = TimePeriod(unit, model.repayment_period_duration,
+      model.repayment_period_start_date)
+      
     if model.plan.type == CreditPlanType.PURPOSE:
-      rate_frequency = self.to_time_period_type(model.plan.rate_frequency)
-      rate = Rate(float(model.plan.interest_rate), rate_frequency)
-      unit = self.to_time_period_type(model.repayment_period_unit)
-      repayment_period = TimePeriod(unit, model.repayment_period_duration,
-        model.repayment_period_start_date)
       if not isinstance(model.return_schedule, list):
         raise ValueError("return_schedule is not a list")
 
@@ -55,8 +56,7 @@ class CreditRequestPortfolioService:
       return NonConsumerCreditRequest(
         float(model.amount), rate, repayment_period, payments)
     elif model.plan.type == CreditPlanType.CONSUMER:
-      # TODO
-      pass
+      return ConsumerCreditRequest(float(model.amount), rate, repayment_period)
     else:
       raise ValueError(f"Unexpected type of CreditPlan ({model.plan.type})")
 
