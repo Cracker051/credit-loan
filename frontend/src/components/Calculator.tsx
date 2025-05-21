@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import {API_DOMAIN} from "../utils/constants";
 import {
   Box,
   TextField,
@@ -27,12 +28,11 @@ interface PaymentInput {
   amount: string;
   date: string;
 }
-const ratePackages = [
-  { name: "A", value: 10 },
-  { name: "B", value: 20 },
-  { name: "C", value: 44.02 },
-];
+
+
+
 const Calculator: React.FC = () => {
+  const [ratePackages, setRatePackages] = useState<{ name: string; value: number }[]>([]);
   // Споживчий калькулятор
   const [consumerAmount, setConsumerAmount] = useState<string>("");
   const [consumerRate, setConsumerRate] = useState<string>("");
@@ -72,7 +72,32 @@ const Calculator: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-    setIsAdmin(localStorage.getItem("role") === "admin");
+    const userStr = localStorage.getItem("user");
+    try {
+      const user = userStr ? JSON.parse(userStr) : null;
+      const role = user?.role__name;
+      setIsAdmin(role === "admin" || role === "operator");
+    } catch (e) {
+      console.error("Failed to parse user:", e);
+      setIsAdmin(false);
+    }
+  }, []);
+  useEffect(() => {
+    const fetchRatePackages = async () => {
+      try {
+        const res = await fetch(`${API_DOMAIN}/credit/plans/`);
+        const data = await res.json();
+        const mapped = data.map((item: any) => ({
+          name: item.name,
+          value: parseFloat(item.interest_rate)*100,
+        }));
+        setRatePackages(mapped);
+      } catch (error) {
+        console.error("Failed to fetch credit plans:", error);
+      }
+    };
+  
+    fetchRatePackages();
   }, []);
 
   useEffect(() => {
@@ -85,6 +110,7 @@ const Calculator: React.FC = () => {
     }
   }, [duration]);
   const handlePackageChange = (pkg: string) => {
+
     setSelectedPackage(pkg);
     const found = ratePackages.find(p => p.name === pkg);
     if (found) setRateValue(found.value.toString());
@@ -115,7 +141,7 @@ const Calculator: React.FC = () => {
   const handleAutofill = () => {
     const today = new Date();
     setAmount("100000");
-    setRateValue("44.02");
+    // setRateValue("44.02");
     setDuration("5");
     setStartDate(today.toISOString().substring(0, 10));
     // setTimeout(() => generateAnnuityPayments(), 100);
@@ -133,7 +159,61 @@ const Calculator: React.FC = () => {
     };
     setPayments(newPayments);
   };
-
+  const timePeriodMap = {
+    [TimePeriodType.DAY]: "Day",
+    [TimePeriodType.MONTH]: "Month",
+    [TimePeriodType.QUARTER]: "Quarter",
+    [TimePeriodType.YEAR]: "Year",
+  };
+  
+  const handleSubmitRequest = async () => {
+    const token = localStorage.getItem("accessToken");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+  
+    const payload = {
+      amount: Number(amount),
+      repayment_period_unit: timePeriodMap[rateFrequency],
+      repayment_period_duration: Number(duration),
+      repayment_period_start_date: startDate,
+      status: "Pending",
+      return_schedule: [
+        ...payments.map(p => ({
+          amount: Number(p.amount),
+          date: p.date,
+        })),
+        ...(lastPayment ? [{
+          amount: lastPayment.amount,
+          date: lastPayment.date.toISOString().substring(0, 10),
+        }] : [])
+      ],
+      user: user?.id,
+      // plan: selectedPackage, // make with ID (PK)
+      plan: 0,
+    };
+  
+    try {
+      const response = await fetch(`${API_DOMAIN}/credit/requests/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to submit credit request");
+      }
+  
+      const result = await response.json();
+      alert("Заявку подано успішно!");
+      console.log(result);
+    } catch (err) {
+      console.error(err);
+      alert("Помилка при відправці заявки");
+    }
+  };
+  
   // const handleRemovePayment = (index: number) => {
   //   setPayments(payments.filter((_, i) => i !== index));
   // };
@@ -220,7 +300,7 @@ const Calculator: React.FC = () => {
                 onChange={e => handlePackageChange(e.target.value)}
               >
                 {ratePackages.map(pkg => (
-                  <MenuItem key={pkg.name} value={pkg.name}>{`Пакет ${pkg.name} (${pkg.value}%)`}</MenuItem>
+                  <MenuItem key={pkg.name} value={pkg.name}>{`Пакет ${pkg.name} (${pkg.value}%) `}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -304,6 +384,7 @@ const Calculator: React.FC = () => {
           </Box>
 
           <Button variant="contained" color="primary" sx={{ mt: 3 }} onClick={handleCalculate}>Розрахувати</Button>
+          <Button variant="contained" color="success" onClick={handleSubmitRequest} sx={{ mt: 2 }}>Подати заявку</Button>
 
           {income !== null && isAdmin && (
             <Box sx={{ mt: 1 }}>

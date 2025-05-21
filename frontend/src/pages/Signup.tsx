@@ -38,8 +38,10 @@ const Signup: React.FC = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${tokens.access}`,
                 },
+                body: JSON.stringify({
+                    "token": tokens.access
+                }),
             });
 
             if (!decodeRes.ok) throw new Error(`Decode error: ${decodeRes.status}`);
