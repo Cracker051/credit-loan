@@ -32,7 +32,7 @@ interface PaymentInput {
 
 
 const Calculator: React.FC = () => {
-  const [ratePackages, setRatePackages] = useState<{ name: string; value: number }[]>([]);
+  const [ratePackages, setRatePackages] = useState<{id:number; name: string; value: number }[]>([]);
   const [calculationReady, setCalculationReady] = useState(false);
 
   // Споживчий калькулятор
@@ -65,7 +65,7 @@ const Calculator: React.FC = () => {
   const [amount, setAmount] = useState<string>("");
   const [rateValue, setRateValue] = useState<string>("");
   const [rateFrequency, setRateFrequency] = useState<TimePeriodType>(TimePeriodType.MONTH);
-  const [selectedPackage, setSelectedPackage] = useState<string>("");
+  const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [duration, setDuration] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [payments, setPayments] = useState<PaymentInput[]>([]);
@@ -102,6 +102,7 @@ const Calculator: React.FC = () => {
           value: parseFloat(item.interest_rate) * 100,
         }));
       setRatePackages(mapped);
+      console.log(mapped);
     } catch (error) {
       console.error("Failed to fetch credit plans:", error);
     }
@@ -115,14 +116,15 @@ const Calculator: React.FC = () => {
       else setRateFrequency(TimePeriodType.YEAR);
     }
   }, [duration]);
-  const handlePackageChange = (pkg: string) => {
+  const handlePackageChange = (pkg: number) => {
+    console.log(pkg);
     setSelectedPackage(pkg);
-    const found = ratePackages.find(p => p.name === pkg);
+    const found = ratePackages.find(p => p.id === pkg);
     if (found) setRateValue(found.value.toString());
   };
-  const handlePackageChangeConsumer = (pkg: string) => {
+  const handlePackageChangeConsumer = (pkg: number) => {
     setSelectedPackage(pkg);
-    const found = ratePackages.find(p => p.name === pkg);
+    const found = ratePackages.find(p => p.id === pkg);
     if (found) setConsumerRate(found.value.toString());
   };
   const generateAnnuityPayments = () => {
@@ -198,8 +200,8 @@ const Calculator: React.FC = () => {
         }] : [])
       ],
       user: user?.id,
-      // plan: selectedPackage, // make with ID (PK)
-      plan: 0,
+      plan: selectedPackage, // make with ID (PK)
+      // plan: 0,
     };
     } else {
       const months = Number(consumerMonths);
@@ -225,8 +227,8 @@ const Calculator: React.FC = () => {
         status: "Pending",
         return_schedule: consumerSchedule,
         user: user?.id,
-        // plan: selectedPackage, // make with ID (PK)
-        plan: 0,
+        plan: selectedPackage, // make with ID (PK)
+        // plan: 0,
       };
     }
   
@@ -337,10 +339,11 @@ const Calculator: React.FC = () => {
                 labelId="package-label"
                 value={selectedPackage}
                 label="Пакет"
-                onChange={e => handlePackageChange(e.target.value)}
+                onChange={e => handlePackageChange(Number(e.target.value))}
+
               >
                 {ratePackages.map(pkg => (
-                  <MenuItem key={pkg.name} value={pkg.name}>{`Пакет ${pkg.name} (${pkg.value}%) `}</MenuItem>
+                  <MenuItem key={pkg.id} value={pkg.id}>{`Пакет ${pkg.name} (${pkg.value}%) `}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -448,10 +451,11 @@ const Calculator: React.FC = () => {
                 labelId="package-label"
                 value={selectedPackage}
                 label="Пакет"
-                onChange={e => handlePackageChangeConsumer(e.target.value)}
+                onChange={e => handlePackageChangeConsumer(Number(e.target.value))}
+
               >
                 {ratePackages.map(pkg => (
-                  <MenuItem key={pkg.name} value={pkg.name}>{`Пакет ${pkg.name} (${pkg.value}%) `}</MenuItem>
+                  <MenuItem key={pkg.id} value={pkg.id}>{`Пакет ${pkg.name} (${pkg.value}%) `}</MenuItem>
                 ))}
               </Select>
             </FormControl>
