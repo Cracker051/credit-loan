@@ -15,10 +15,12 @@ import {
     DialogActions,
     useMediaQuery,
     useTheme,
+    Checkbox,
+    FormControlLabel,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import {API_DOMAIN} from "../utils/constants";
-import {useNavigate} from "react-router-dom";
+import { API_DOMAIN } from "../utils/constants";
+import { useNavigate } from "react-router-dom";
 
 interface Payment {
     date: string;
@@ -38,6 +40,7 @@ const CreditRequests: React.FC = () => {
     const [requests, setRequests] = useState<CreditRequest[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedSchedule, setSelectedSchedule] = useState<Payment[] | null>(null);
+    const [isPayAble, setIsPayAble] = useState(false);
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
     const navigate = useNavigate();
@@ -56,16 +59,11 @@ const CreditRequests: React.FC = () => {
     });
 
     const getRequests = async () => {
-        const token = localStorage.getItem("accessToken");
-
-        if (!token) {
-            console.error("Access token not found.");
-            navigate("/");
-            return;
-        }
-
         try {
-            const response = await fetch(`${API_DOMAIN}/credit/requests/portfolio/`, {
+            let url = `${API_DOMAIN}/credit/requests/portfolio/`;
+            if (isPayAble) url += 'non_deterministic';
+
+            const response = await fetch(url, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -73,88 +71,28 @@ const CreditRequests: React.FC = () => {
                 },
             });
 
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Error ${response.status}`);
 
             const items = await response.json();
-
-            console.log(items)
-
             const detailPromises = items.map(async (item: any) => {
-                const res = await fetch(`${API_DOMAIN}/credit/requests/${item['credit_request_id']}`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                if (!res.ok) {
-                    throw new Error(`Error fetching ID ${item['credit_request_id']}: ${res.status}`);
-                }
-
+                const res = await fetch(
+                    `${API_DOMAIN}/credit/requests/${item.credit_request_id}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                if (!res.ok) throw new Error(`Error fetching ID ${item.credit_request_id}: ${res.status}`);
                 const creditRequest = await res.json();
                 const data = mapToMockRequest(creditRequest);
-                return {...data, recommended: item['is_selected'] >= 0.5};
+                return { ...data, recommended: item.is_selected >= 0.5 };
             });
 
             const details = await Promise.all(detailPromises);
-
             setRequests(details);
-            console.log("Fetched collections:", details);
-        } catch (error) {
-            console.error("Request failed:", error);
-        }
-    };
-
-    const handleAccept = async () => {
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-            console.error("Access token not found.");
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_DOMAIN}/credit/requests/portfolio/accept`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}`);
-            }
-
-            navigate("/", { replace: true });
-        } catch (error) {
-            console.error("Request failed:", error);
-        }
-    };
-
-    const handleReject = async () => {
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-            console.error("Access token not found.");
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_DOMAIN}/credit/requests/portfolio/reject`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}`);
-            }
-
-            navigate("/", { replace: true });
         } catch (error) {
             console.error("Request failed:", error);
         }
@@ -162,13 +100,50 @@ const CreditRequests: React.FC = () => {
 
     useEffect(() => {
         getRequests();
-    }, []);
+    }, [isPayAble]);
+
+    const handleAccept = async () => {
+        try {
+            const response = await fetch(
+                `${API_DOMAIN}/credit/requests/portfolio/accept`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            if (!response.ok) throw new Error(`Error ${response.status}`);
+            navigate("/", { replace: true });
+        } catch (error) {
+            console.error("Accept failed:", error);
+        }
+    };
+
+    const handleReject = async () => {
+        try {
+            const response = await fetch(
+                `${API_DOMAIN}/credit/requests/portfolio/reject`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            if (!response.ok) throw new Error(`Error ${response.status}`);
+            navigate("/", { replace: true });
+        } catch (error) {
+            console.error("Reject failed:", error);
+        }
+    };
 
     const handleOpenSchedule = (schedule: Payment[]) => {
         setSelectedSchedule(schedule);
         setDialogOpen(true);
     };
-
     const handleCloseSchedule = () => {
         setDialogOpen(false);
         setSelectedSchedule(null);
@@ -179,7 +154,7 @@ const CreditRequests: React.FC = () => {
             <Typography
                 variant="h4"
                 sx={{
-                    mb: 4,
+                    mb: 2,
                     fontWeight: "bold",
                     color: "#1976d2",
                     textAlign: { xs: "center", md: "left" },
@@ -187,6 +162,17 @@ const CreditRequests: React.FC = () => {
             >
                 Кредитні запити
             </Typography>
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={isPayAble}
+                        onChange={(e) => setIsPayAble(e.target.checked)}
+                        sx={{ color: '#1976d2', '&.Mui-checked': { color: '#2e7d32' } }}
+                    />
+                }
+                label="Враховувати ймовірність неплатоспроможності"
+                sx={{ mb: 2 }}
+            />
 
             <TableContainer component={Paper} elevation={3}>
                 <Table size="small">
@@ -206,7 +192,7 @@ const CreditRequests: React.FC = () => {
                                 key={req.id}
                                 sx={{
                                     bgcolor: req.recommended ? "#e8f5e9" : "#ffebee",
-                                    "&:hover": { backgroundColor: "#f1f8e9" },
+                                    '&:hover': { backgroundColor: '#f1f8e9' },
                                 }}
                             >
                                 <TableCell>{req.id}</TableCell>
@@ -239,42 +225,21 @@ const CreditRequests: React.FC = () => {
             </TableContainer>
 
             <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end", gap: 2 }}>
-                <Button
-                    variant="contained"
-                    color="success"
-                    sx={{ textTransform: "none" }}
-                    onClick={handleAccept}
-                >
+                <Button variant="contained" color="success" onClick={handleAccept} sx={{ textTransform: 'none' }}>
                     Прийняти
                 </Button>
-                <Button
-                    variant="contained"
-                    color="error"
-                    sx={{ textTransform: "none" }}
-                    onClick={handleReject}
-                >
+                <Button variant="contained" color="error" onClick={handleReject} sx={{ textTransform: 'none' }}>
                     Відхилити
                 </Button>
             </Box>
 
-            <Dialog
-                open={dialogOpen}
-                onClose={handleCloseSchedule}
-                fullScreen={fullScreen}
-                maxWidth="sm"
-                fullWidth
-            >
+            <Dialog open={dialogOpen} onClose={handleCloseSchedule} fullScreen={fullScreen} maxWidth="sm" fullWidth>
                 <DialogTitle>Графік платежів</DialogTitle>
                 <DialogContent dividers>
                     {selectedSchedule?.map((p, i) => (
                         <Box
                             key={i}
-                            sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                p: 1,
-                                borderBottom: "1px solid #eee",
-                            }}
+                            sx={{ display: 'flex', justifyContent: 'space-between', p: 1, borderBottom: '1px solid #eee' }}
                         >
                             <Typography>Дата: {p.date}</Typography>
                             <Typography>Сума: {p.amount} ₴</Typography>
