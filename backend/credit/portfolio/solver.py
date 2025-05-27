@@ -18,7 +18,7 @@ def find_deterministic_optimal_portfolio(credit_requests: Iterable[BaseCreditReq
 
 def find_stochastic_optimal_portfolio(credit_requests: Iterable[BaseCreditRequest], available_resources: float, pulp_logs: bool = False, k: float = 0, corr_matrix: Union[None, np.ndarray[float]] = None, insolvency_probs: Union[np.ndarray, None] = None) -> tuple[LpProblem, tuple[bool]]:
     if corr_matrix is None:
-       corr_matrix = np.eye((len(credit_requests), len(credit_requests)))
+       corr_matrix = np.eye(len(credit_requests), len(credit_requests))
     else:
        assert isinstance(corr_matrix, np.ndarray), "Type of correlation matrix should be numpy.ndarray"
        assert corr_matrix.shape == (len(credit_requests), len(credit_requests)), "Correlation matrix should be N x N, where N is the number of credit requests"
@@ -59,12 +59,10 @@ def find_stochastic_optimal_portfolio(credit_requests: Iterable[BaseCreditReques
 
 
 def find_optimal_portfolio(credit_requests: Iterable[BaseCreditRequest], available_resources: float, pulp_logs: bool = False, k: float = 0, corr_matrix: Union[None, np.ndarray[float]] = None, insolvency_probs: Union[np.ndarray, None] = None, stochastic: bool = False) -> tuple[LpProblem, tuple[bool]]:
-    deterministic_res = find_deterministic_optimal_portfolio(credit_requests, available_resources, pulp_logs)
-    stochastic_res = find_stochastic_optimal_portfolio(credit_requests, available_resources, pulp_logs, k, corr_matrix, insolvency_probs)
     if stochastic:
-        return deterministic_res, stochastic_res
+        return find_stochastic_optimal_portfolio(credit_requests, available_resources, pulp_logs, k, corr_matrix, insolvency_probs)
     else:
-       return deterministic_res
+        return find_deterministic_optimal_portfolio(credit_requests, available_resources, pulp_logs)
 
 
 # def find_optimal_portfolio(credit_requests: Iterable[BaseCreditRequest], available_resources: float, pulp_logs: bool = False) -> tuple[LpProblem, tuple[bool]]:

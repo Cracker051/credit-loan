@@ -1,4 +1,8 @@
 import backend.base.const as backend_const
+import numpy as np
+
+from datetime import datetime
+from typing import Iterable
 
 from django.utils import timezone
 
@@ -7,11 +11,9 @@ from backend.credit.portfolio.solver import find_optimal_portfolio
 from backend.credit.portfolio.credit_requests import BaseCreditRequest, NonConsumerCreditRequest, ConsumerCreditRequest
 from backend.credit.portfolio.data_types import Rate, TimePeriod, TimePeriodType, Payment
 
-from datetime import datetime
-from typing import Iterable
 
 class CreditRequestPortfolioService:
-  def calculate_portfolio(self):
+  def calculate_portfolio(self, deterministic: bool = True):
     credit_requests = CreditRequest.objects.filter(status=CreditRequestStatusType.PENDING)
     result = []
     if len(credit_requests) == 0:
@@ -23,10 +25,16 @@ class CreditRequestPortfolioService:
     print("Balance:", balance)
     print("Count of credit requests:", len(converted))
     print("Calculating the optimal portfolio...")
-    model, selected_requests = find_optimal_portfolio(converted, float(balance))
+    if (deterministic):
+      model, selected_requests = find_optimal_portfolio(converted, float(balance))
+      print("Total income:", round(model.objective.value(), 4))
+    else:
+      insolvency_probs = []
+      for request in credit_requests:
+        insolvency_probs.append(float(request.user.insolvency_probability))
+      model, selected_requests = find_optimal_portfolio(converted, float(balance), stochastic=True, insolvency_probs=np.array(insolvency_probs))
     print("Done")
     print("Selected requests:", selected_requests)
-    print("Total income:", round(model.objective.value(), 4))
     
     for idx, request in enumerate(credit_requests):
       result.append({"credit_request_id": request.id, "is_selected": selected_requests[idx]})

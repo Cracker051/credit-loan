@@ -86,6 +86,21 @@ class CreditRequestPortfolioView(APIView):
         return Response(data)
 
 
+class CreditRequestPortfolioStochasticView(APIView):
+    """
+    Обчислити оптимальний портфель кредитів на основі
+    кредитних запитів зі статусом `pending`, 
+    враховуючи insolvency_probability юзерів 
+    Доступно лише staff-користувачам
+    """
+
+    permission_classes = [permissions.IsStaffOnlyContent]
+
+    def get(self, request):
+        data = CreditRequestPortfolioService().calculate_portfolio(deterministic=False)
+        return Response(data)
+
+
 class CreditRequestPortfolioAcceptView(APIView):
     """
     Змінити стан кредитних запитів з оптимального портфеля на `Accepted`,
