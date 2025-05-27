@@ -10,6 +10,10 @@ urlpatterns = [
     path("requests/<int:pk>/", views.CreditRequestRetrieveUpdateDestroyView.as_view(), name="credit-request-detail"),
     path("requests/portfolio/", views.CreditRequestPortfolioView.as_view(), name="credit-requests-portfolio"),
     path(
+        "requests/portfolio/non-deterministic",
+        views.CreditRequestPortfolioStochasticView.as_view(),
+        name="credit-requests-portfolio-non-deterministic"),
+    path(
         "requests/portfolio/accept",
         views.CreditRequestPortfolioAcceptView.as_view(),
         name="credit-requests-portfolio-accept",
