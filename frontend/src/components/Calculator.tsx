@@ -251,8 +251,10 @@ const Calculator: React.FC = () => {
       });
   
       if (!response.ok) {
-        throw new Error("Failed to submit credit request");
+        const errorData = await response.json();
+        throw new Error(`${errorData.detail || "Unknown error"}`);
       }
+      
   
       const result = await response.json();
       alert("Заявку подано успішно!");
