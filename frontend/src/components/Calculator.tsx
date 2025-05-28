@@ -14,6 +14,7 @@ import {
   FormControl,
   InputLabel
 } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Link } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import {
   calcLastPayment,
@@ -32,6 +33,8 @@ interface PaymentInput {
 
 
 const Calculator: React.FC = () => {
+  const [openUnauthorized, setOpenUnauthorized] = useState(false);
+
   const [ratePackages, setRatePackages] = useState<{id:number; name: string; value: number }[]>([]);
   const [calculationReady, setCalculationReady] = useState(false);
 
@@ -99,7 +102,7 @@ const Calculator: React.FC = () => {
         .map((item: any) => ({
           id: item.id,
           name: item.name,
-          value: parseFloat(item.interest_rate) * 100,
+          value: parseFloat((parseFloat(item.interest_rate) * 100).toFixed(2)),
         }));
       setRatePackages(mapped);
       console.log(mapped);
@@ -181,6 +184,11 @@ const Calculator: React.FC = () => {
   const handleSubmitRequest = async () => {
     const token = localStorage.getItem("accessToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!token || !user?.id) {
+      setOpenUnauthorized(true); 
+      return;
+    }
+    
     let payload;
     if (activeTab === 0) {
     payload = {
@@ -251,7 +259,7 @@ const Calculator: React.FC = () => {
       console.log(result);
     } catch (err) {
       console.error(err);
-      alert("Помилка при відправці заявки");
+      alert(`Помилка при відправці заявки - ${err}`);
     }
   };
   
@@ -325,6 +333,17 @@ const Calculator: React.FC = () => {
         <Tab label="Неспоживчий кредит" />
         <Tab label="Споживчий кредит" />
       </Tabs>
+      <Dialog open={openUnauthorized} onClose={() => setOpenUnauthorized(false)}>
+        <DialogTitle>Неавторизований доступ</DialogTitle>
+          <DialogContent>
+            Ви не авторизовані для цього дії. Будь ласка, 
+            <Link href="/login" underline="hover">увійдіть</Link> або  
+            <Link href="/register" underline="hover"> зареєструйтесь</Link>.
+          </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenUnauthorized(false)}>Закрити</Button>
+        </DialogActions>
+      </Dialog>
 
       {activeTab === 0 && (
         <>
