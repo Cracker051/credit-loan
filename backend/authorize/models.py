@@ -1,5 +1,4 @@
 from typing import Optional, override
-from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -89,10 +88,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="users")
 
     insolvency_probability = models.DecimalField(
-        validators=[MinValueValidator(0.0001), MaxValueValidator(0.9999)],
+        validators=[MinValueValidator(0), MaxValueValidator(0.9999)],
         max_digits=5,
         decimal_places=4,
-        default=Decimal('0.00')
+        default=0,
     )
 
     USERNAME_FIELD = "email"

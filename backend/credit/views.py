@@ -1,14 +1,12 @@
-import backend.base.const as backend_const
-
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
-from rest_framework.views import APIView 
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.views import APIView
 
+import backend.base.const as backend_const
+from backend.credit import permissions
 from backend.credit.models import CreditPlan, CreditRequest, CreditRequestStatusType, Transaction
 from backend.credit.serializers import CreditPlanSerializer, CreditRequestSerializer, TransactionSerializer
-from backend.credit import permissions
 from backend.credit.services import CreditRequestPortfolioService
 
 
@@ -17,6 +15,7 @@ class CreditPlanListCreateView(generics.ListCreateAPIView):
     Отримати список кредитних планів (доступно всім)
     Створити кредитний план (доступно лише staff-користувачам)
     """
+
     queryset = CreditPlan.objects.all()
     serializer_class = CreditPlanSerializer
     permission_classes = [permissions.IsReadOnlyContent]
@@ -28,6 +27,7 @@ class CreditPlanRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView)
     Зміна і видалення доступно лише staff-користувачам
     Перегляд доступно усім
     """
+
     queryset = CreditPlan.objects.all()
     serializer_class = CreditPlanSerializer
     permission_classes = [permissions.IsReadOnlyContent]
@@ -39,6 +39,7 @@ class CreditRequestListCreateView(generics.ListCreateAPIView):
     Отримати список кредитних запитів (доступно лише staff-користувачам).
     Можна фільтрувати за статусом: credit/plans/?status=pending
     """
+
     queryset = CreditRequest.objects.all()
     serializer_class = CreditRequestSerializer
     permission_classes = [permissions.IsUserListContent]
@@ -46,14 +47,14 @@ class CreditRequestListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = CreditRequest.objects.all()
 
-        status_param = self.request.query_params.get('status')
+        status_param = self.request.query_params.get("status")
         if status_param and not CreditRequestStatusType.is_valid(status_param):
             valid_statuses = CreditRequestStatusType.choices().values()
-            raise ValidationError({'status': f"Invalid value. Available: {valid_statuses}"})
-        
+            raise ValidationError({"status": f"Invalid value. Available: {valid_statuses}"})
+
         if status_param:
             queryset = queryset.filter(status=status_param)
-        
+
         return queryset
 
     def perform_create(self, serializer):
@@ -65,6 +66,7 @@ class CreditRequestRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIVi
     Переглянути, змінити або видалити кредитний план
     Доступно лише автору запиту або staff-користувачам
     """
+
     queryset = CreditRequest.objects.all()
     serializer_class = CreditRequestSerializer
     permission_classes = [permissions.IsVerifiedUserContent]
@@ -76,10 +78,26 @@ class CreditRequestPortfolioView(APIView):
     кредитних запитів зі статусом `pending`
     Доступно лише staff-користувачам
     """
+
     permission_classes = [permissions.IsStaffOnlyContent]
 
     def get(self, request):
         data = CreditRequestPortfolioService().calculate_portfolio()
+        return Response(data)
+
+
+class CreditRequestPortfolioStochasticView(APIView):
+    """
+    Обчислити оптимальний портфель кредитів на основі
+    кредитних запитів зі статусом `pending`, 
+    враховуючи insolvency_probability юзерів 
+    Доступно лише staff-користувачам
+    """
+
+    permission_classes = [permissions.IsStaffOnlyContent]
+
+    def get(self, request):
+        data = CreditRequestPortfolioService().calculate_portfolio(deterministic=False)
         return Response(data)
 
 
@@ -89,6 +107,7 @@ class CreditRequestPortfolioAcceptView(APIView):
     а які не ввійшли в портфель -- на `Rejected`
     Доступно лише staff-користувачам
     """
+
     permission_classes = [permissions.IsStaffOnlyContent]
 
     def post(self, request):
@@ -105,10 +124,10 @@ class CreditRequestPortfolioAcceptView(APIView):
             else:
                 credit_request.status = CreditRequestStatusType.REJECTED
                 rejected.append(credit_request_id)
-            
+
             credit_request.save()
 
-        return Response({"accepted": accepted, "rejected": rejected,}, status=status.HTTP_200_OK)
+        return Response({"accepted": accepted, "rejected": rejected}, status=status.HTTP_200_OK)
 
 
 class CreditRequestPortfolioRejectView(APIView):
@@ -116,6 +135,7 @@ class CreditRequestPortfolioRejectView(APIView):
     Змінити статус усіх кредитних запитів зі статусом `Pending` на `Rejected`
     Доступно лише staff-користувачам
     """
+
     permission_classes = [permissions.IsStaffOnlyContent]
 
     def post(self, request):
@@ -132,6 +152,13 @@ class TransactionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView
     CRUD операції для транзакцій
     Доступно лише staff-користувачам
     """
+
+    queryset = Transaction.objects.all()
+    serializer_class = TransactionSerializer
+    permission_classes = [permissions.IsStaffOnlyContent]
+
+
+class TransactionsListCreateView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsStaffOnlyContent]
@@ -142,6 +169,7 @@ class CurrentBalanceView(APIView):
     Отримати поточний баланс (розмі кредитних ресурсів)
     Доступно лише staff-користувачам
     """
+
     permission_classes = [permissions.IsStaffOnlyContent]
 
     def get(self, request):
